@@ -7,6 +7,7 @@ import io
 import time
 import numpy as np
 from PIL import Image
+import gc
 import base64
 import torch.onnx
 from datetime import datetime
@@ -28,10 +29,12 @@ else:
     import pickle
 
 from werkzeug.contrib.cache import SimpleCache
-cache = SimpleCache()
+#cache = SimpleCache()
+cache = {}
 
 app = Flask(__name__)
 cfg = bird_cfg
+
 
 # for CORS
 @app.after_request
@@ -65,10 +68,20 @@ def vectorize_caption(wordtoix, caption, copies=2):
     return captions.astype(int), cap_lens.astype(int)
 
 def generate_(caption, modelname, copies=2):
+    # check cache contents
+    if (modelname + '_wordtoix' in cache):
+        print("cache contains:" + modelname + '_wordtoix')
+    if (modelname + '_text_encoder' in cache):
+        print("cache contains:" + modelname + '_text_encoder')
 
-    wordtoix = cache.get(modelname + '_wordtoix')
-    text_encoder = cache.get(modelname + '_text_encoder')
-    netG = cache.get(modelname + '_netG')
+    wordtoix = cache[modelname + '_wordtoix']
+    if (wordtoix == None):
+        return 'invalid cache element'
+    
+    print('length(wordtoix): {}'.format(len(wordtoix)))
+
+    text_encoder = cache[modelname + '_text_encoder']
+    netG = cache[modelname + '_netG']
     # load word vector
     captions, cap_lens  = vectorize_caption(wordtoix, caption, copies)
     n_words = len(wordtoix)
@@ -163,23 +176,23 @@ def generate_(caption, modelname, copies=2):
 
 def word_index(model):
     # model must be 'bird' or 'coco'
-    ixtoword = cache.get(model + '_ixtoword')
-    wordtoix = cache.get(model + '_wordtoix')
-    if ixtoword is None or wordtoix is None:
+    ixtoword = cache.get(model + '_ixtoword', None)
+    wordtoix = cache.get(model + '_wordtoix', None)
+    if ixtoword is None or wordtoix is False:
         #print("ix and word not cached")
         # load word to index dictionary
-        x = pickle.load(open('data/' + model + '/captions.pickle', 'rb'))
+        x = pickle.load(open('/home/bitnami/apps/AttnGAN/server' + '/data/' + model + '/captions.pickle', 'rb'))
         ixtoword = x[2]
         wordtoix = x[3]
-        del x
-        cache.set(model + '_ixtoword', ixtoword, timeout=60 * 60 * 24)
-        cache.set(model + '_wordtoix', wordtoix, timeout=60 * 60 * 24)
+        print('length(wordtoix): {}'.format(len(wordtoix)))
+        cache[model + '_ixtoword'] = ixtoword
+        cache[model + '_wordtoix'] = wordtoix
 
     return wordtoix, ixtoword
 
 def models(modelname, cfg, word_len):
     #print(word_len)
-    text_encoder = cache.get(modelname + '_text_encoder')
+    text_encoder = cache.get(modelname + '_text_encoder', None)
     if text_encoder is None:
         #print("text_encoder not cached")
         text_encoder = RNN_ENCODER(word_len, nhidden=cfg.TEXT.EMBEDDING_DIM)
@@ -188,10 +201,10 @@ def models(modelname, cfg, word_len):
         if cfg.CUDA:
             text_encoder.cuda()
         text_encoder.eval()
-        cache.set(modelname + '_text_encoder', text_encoder, timeout=60 * 60 * 24)
+        cache[modelname + '_text_encoder'] = text_encoder
 
 
-    netG = cache.get(modelname + '_netG')
+    netG = cache.get(modelname + '_netG', None)
     if netG is None:
         #print("netG not cached")
         netG = G_NET()
@@ -200,7 +213,7 @@ def models(modelname, cfg, word_len):
         if cfg.CUDA:
             netG.cuda()
         netG.eval()
-        cache.set(modelname + '_netG', netG, timeout=60 * 60 * 24)
+        cache[modelname + '_netG'] = netG
 
     return text_encoder, netG
 
@@ -250,24 +263,27 @@ def init(modelname):
         wordtoix, ixtoword = word_index(modelname)
         # lead models
         text_encoder, netG = models(modelname, cfg, len(wordtoix))
+   #     app.logger.info('successfully initialized AttnGAN')
         return Response('successfully initialized AttnGAN')
     except Exception as e:
-        app.logger.info('AttnGAN initialization error: %e' % e)
+   #     app.logger.info('AttnGAN initialization error: %e' % e)
         return Response(e)
 
 
 @app.route('/generate/<caption>/<modelname>', methods=['POST'])
 def generate(caption, modelname):
     try:
-        #caption = "the bird has a yellow crown and a black eyering that is round"
+        print("In generate: args1: {}, arg2: {}".format(caption, modelname))
+        gc.collect()        
         t0 = time.time()
         stream = generate_(caption, modelname)
         t1 = time.time()
         print(t1 - t0)
         stream[0]['fp_time'] = t1-t0
+        
         return jsonify(stream)
     except Exception as e:
-        app.logger.info('Error while generating image: %e' % e)
+    #    app.logger.info('Error while generating image: %e' % e)
         print(e)
         return Response(e)
 
@@ -275,6 +291,13 @@ if __name__ == "__main__":
     if (os.name == 'nt'):
         # without SSL
         app.run(debug=True, host='0.0.0.0', port=5000)
+
+    if (os.name == 'posix'):
+        # without SSL
+        app.run(debug=True, host='0.0.0.0')
+
+        #app.run(debug=True, host='0.0.0.0', ssl_context=('ssl/server.crt', 'ssl/server.key'))
+
     #caption = "the bird has a yellow crown and a black eyering that is round"
 
 

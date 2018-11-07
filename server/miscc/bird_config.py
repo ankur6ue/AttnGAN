@@ -35,8 +35,8 @@ __C.TRAIN.GENERATOR_LR = 2e-4
 __C.TRAIN.ENCODER_LR = 2e-4
 __C.TRAIN.RNN_GRAD_CLIP = 0.25
 __C.TRAIN.FLAG = False
-__C.TRAIN.NET_E = 'data/bird/text_encoder200.pth'
-__C.TRAIN.NET_G = 'data/bird/bird_AttnGAN2.pth'
+__C.TRAIN.NET_E = osp.dirname(__file__) + '/../data/bird/text_encoder200.pth'
+__C.TRAIN.NET_G = osp.dirname(__file__) + '/../data/bird/bird_AttnGAN2.pth'
 __C.TRAIN.B_NET_D = False
 
 __C.TRAIN.SMOOTH = edict()

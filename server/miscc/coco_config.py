@@ -10,7 +10,7 @@ __C = edict()
 coco_cfg = __C
 
 # Dataset name: flowers, birds
-__C.DATASET_NAME = 'birds'
+__C.DATASET_NAME = 'coco'
 __C.CONFIG_NAME = 'attn2'
 __C.DATA_DIR = ''
 __C.GPU_ID = 0
@@ -35,8 +35,8 @@ __C.TRAIN.GENERATOR_LR = 2e-4
 __C.TRAIN.ENCODER_LR = 2e-4
 __C.TRAIN.RNN_GRAD_CLIP = 0.25
 __C.TRAIN.FLAG = False
-__C.TRAIN.NET_E = 'data/coco/text_encoder100.pth'
-__C.TRAIN.NET_G = 'data/coco/coco_AttnGAN2.pth'
+__C.TRAIN.NET_E = osp.dirname(__file__) + '/../data/coco/text_encoder100.pth'
+__C.TRAIN.NET_G = osp.dirname(__file__) + '/../data/coco/coco_AttnGAN2.pth'
 __C.TRAIN.B_NET_D = False
 
 __C.TRAIN.SMOOTH = edict()

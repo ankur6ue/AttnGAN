@@ -7,7 +7,7 @@ const s = document.getElementById('attnGAN');
 if (hostType == 'localhost')
 	apiServer = "http://127.0.0.1:5000" // must be just like this. using 0.0.0.0 for the IP doesn't work! 
 else
-	apiServer = "https://www.telesens.co/obj_detect_impl"
+	apiServer = "http://52.90.180.232/attn_gan_impl"
 
 captions = []
 var activeModel = ""
