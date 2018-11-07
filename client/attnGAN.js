@@ -127,9 +127,9 @@ function onSubmitCaption()
 				var im_64 = ims[0]['im_64']
 				var fp_time = ims[0]['fp_time']
 				
-				$('#GeneratedImages_256').html('<img src="data:image/png;base64,' + im_256 + '" class="img-rounded"/>');
-				$('#GeneratedImages_128').html('<img src="data:image/png;base64,' + im_128 + '" class="img-rounded"/>');
-				$('#GeneratedImages_64').html('<img src="data:image/png;base64,' + im_64 + '" class="img-rounded"/>');
+				$('#GeneratedImages_256').append('<img src="data:image/png;base64,' + im_256 + '" class="img-rounded"/>');
+				$('#GeneratedImages_128').append('<img src="data:image/png;base64,' + im_128 + '" class="img-rounded"/>');
+				$('#GeneratedImages_64').append('<img src="data:image/png;base64,' + im_64 + '" class="img-rounded"/>');
 				
 				$('#status').val("Image generated in " + parseFloat(fp_time).toFixed(2) + " seconds");
 			}
