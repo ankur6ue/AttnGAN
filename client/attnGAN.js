@@ -7,7 +7,7 @@ const s = document.getElementById('attnGAN');
 if (hostType == 'localhost')
 	apiServer = "http://127.0.0.1:5000" // must be just like this. using 0.0.0.0 for the IP doesn't work! 
 else
-	apiServer = "http://52.90.180.232/attn_gan_impl"
+	apiServer = "http://100.25.86.93/attn_gan_impl"
 
 captions = []
 var activeModel = ""
@@ -114,6 +114,8 @@ function onSubmitCaption()
 	var method = apiServer + '/generate/' + $('#caption').val() + '/' + activeModel;
     xhr.open('POST', method, true);
 	xhr.onload = function () {
+        // Reactivate the button
+         $('.btn.btn-primary').prop('disabled', false)
         if (this.status === 200) {
 			if (errorCodes.includes(this.response)){
 				// There is some error
@@ -127,9 +129,9 @@ function onSubmitCaption()
 				var im_64 = ims[0]['im_64']
 				var fp_time = ims[0]['fp_time']
 				
-				$('#GeneratedImages_256').append('<img src="data:image/png;base64,' + im_256 + '" class="img-rounded"/>');
-				$('#GeneratedImages_128').append('<img src="data:image/png;base64,' + im_128 + '" class="img-rounded"/>');
-				$('#GeneratedImages_64').append('<img src="data:image/png;base64,' + im_64 + '" class="img-rounded"/>');
+				$('#GeneratedImages_256').html('<h4>256x256</h4> <img src="data:image/png;base64,' + im_256 + '" class="img-rounded"/>');
+				$('#GeneratedImages_128').html('<h4>128x128</h4> <img src="data:image/png;base64,' + im_128 + '" class="img-rounded"/>');
+				$('#GeneratedImages_64').html('<h4>64x64</h4> <img src="data:image/png;base64,' + im_64 + '" class="img-rounded"/>');
 				
 				$('#status').val("Image generated in " + parseFloat(fp_time).toFixed(2) + " seconds");
 			}
@@ -140,6 +142,8 @@ function onSubmitCaption()
 			
 		}
 	};
+    // Disable button so the user can't click it multiple times until response it received
+    $('.btn.btn-primary').prop('disabled', true)
 	xhr.timeout = 4000;
 	xhr.send(null)
 }
