@@ -7,7 +7,7 @@ const s = document.getElementById('attnGAN');
 if (hostType == 'localhost')
 	apiServer = "http://127.0.0.1:5000" // must be just like this. using 0.0.0.0 for the IP doesn't work! 
 else
-	apiServer = "http://100.25.86.93/attn_gan_impl"
+	apiServer = "http://www.telesens.co/attn_gan_impl"
 
 captions = []
 var activeModel = ""
@@ -49,7 +49,8 @@ captions['coco'] =
 ]
 
 errorCodes = 
-["bad caption"]
+["bad caption",
+ "model not in cache"]
 
 function LoadModel(modelType)
 {
@@ -117,9 +118,10 @@ function onSubmitCaption()
         // Reactivate the button
          $('.btn.btn-primary').prop('disabled', false)
         if (this.status === 200) {
-			if (errorCodes.includes(this.response)){
+            var ims = JSON.parse(this.response)
+			if (ims[0]['error_code'] != ''){
 				// There is some error
-				$('#status').val(this.response);
+				$('#status').val(ims[0]['error_code']);
 			}
 			else
 			{

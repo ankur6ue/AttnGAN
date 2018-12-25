@@ -35,6 +35,9 @@ cache = {}
 app = Flask(__name__)
 cfg = bird_cfg
 
+# for logging gunicorn process ids
+def post_response(worker, req, environ, resp):
+    worker.log.debug("%s", worker.pid)
 
 # for CORS
 @app.after_request
@@ -71,12 +74,14 @@ def generate_(caption, modelname, copies=2):
     # check cache contents
     if (modelname + '_wordtoix' in cache):
         print("cache contains:" + modelname + '_wordtoix')
+    else:
+        return [{'error_code': 'model not in cache'}]
+
+    # This one should be in cache if the previous one is..
     if (modelname + '_text_encoder' in cache):
         print("cache contains:" + modelname + '_text_encoder')
 
     wordtoix = cache[modelname + '_wordtoix']
-    if (wordtoix == None):
-        return 'invalid cache element'
     
     print('length(wordtoix): {}'.format(len(wordtoix)))
 
@@ -86,7 +91,7 @@ def generate_(caption, modelname, copies=2):
     captions, cap_lens  = vectorize_caption(wordtoix, caption, copies)
     n_words = len(wordtoix)
     if (cap_lens[0] == 0):
-        return "bad caption"
+        return [{'error_code': "bad caption"}]
     # only one to generate
     batch_size = captions.shape[0]
 
@@ -170,7 +175,7 @@ def generate_(caption, modelname, copies=2):
     im.save(stream, format="png")
     im_64 = base64.b64encode(stream.getvalue()).decode()
 
-    ret = [{'im_256': im_256, 'im_128': im_128, 'im_64': im_64}]
+    ret = [{'error_code': "", 'im_256': im_256, 'im_128': im_128, 'im_64': im_64}]
     return ret
 
 
@@ -248,6 +253,7 @@ def init(modelname):
     handler.setLevel(logging.DEBUG)
     app.logger.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
+    print("Init request handled by process id: {}".format(os.getpid()))
     try:
         if modelname == 'bird':
             cfg = bird_cfg
@@ -274,6 +280,7 @@ def init(modelname):
 def generate(caption, modelname):
     try:
         print("In generate: args1: {}, arg2: {}".format(caption, modelname))
+        print("Generate request handled by process id: {}".format(os.getpid()))
         gc.collect()        
         t0 = time.time()
         stream = generate_(caption, modelname)
@@ -294,7 +301,7 @@ if __name__ == "__main__":
 
     if (os.name == 'posix'):
         # without SSL
-        app.run(debug=True, host='0.0.0.0')
+        app.run(debug=True, host='127.0.0.1', port=5000)
 
         #app.run(debug=True, host='0.0.0.0', ssl_context=('ssl/server.crt', 'ssl/server.key'))
 
